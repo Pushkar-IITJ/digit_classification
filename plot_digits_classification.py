@@ -31,3 +31,7 @@ best_hparams, best_model, best_accuracy = tune_hparams(X_train, y_train, X_dev, 
 
 # assignment 3: Task 3 and 4 
 test_dev_variations(X,y)
+
+# print
+print(f"The number of total samples in the dataset: {len(y)}")
+print(f"Size (height and width) of the images in dataset: {len(X),len(y)}")
