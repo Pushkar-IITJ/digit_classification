@@ -1,92 +1,65 @@
-from itertools import product
-from sklearn import metrics, datasets, svm
 from sklearn.model_selection import train_test_split
+from sklearn import svm, tree, datasets, metrics
+from joblib import dump, load
 
+def get_combinations(param_name, param_values, base_combinations):
+    new_combinations = []
+    for value in param_values:
+        for combination in base_combinations:
+            combination[param_name] = value
+            new_combinations.append(combination.copy())
+    return new_combinations
 
-def read_data():
-    # Read data
+def get_hyperparameter_combinations(dict_of_param_lists):
+    base_combinations = [{}]
+    for param_name, param_values in dict_of_param_lists.items():
+        base_combinations = get_combinations(param_name, param_values, base_combinations)
+    return base_combinations
+
+def tune_hparams(X_train, y_train, X_dev, y_dev, h_params_combinations, model_type="svm"):
+    best_accuracy = -1
+    best_model_path = ""
+    for h_params in h_params_combinations:
+        model = train_model(X_train, y_train, h_params, model_type=model_type)
+        cur_accuracy, _, _ = predict_and_eval(model, X_dev, y_dev)
+        if cur_accuracy > best_accuracy:
+            best_accuracy = cur_accuracy
+            best_hparams = h_params
+            best_model_path = f"./models/{model_type}_" + "_".join([f"{k}:{v}" for k, v in h_params.items()]) + ".joblib"
+            best_model = model
+    dump(best_model, best_model_path)
+    return best_hparams, best_model_path, best_accuracy
+
+def read_digits():
     digits = datasets.load_digits()
-
-    # flatten the images
-    n_samples = len(digits.images)
-
-    X = digits.images.reshape((n_samples, -1))
+    X = digits.images
     y = digits.target
-
     return X, y
 
+def preprocess_data(data):
+    n_samples = len(data)
+    data = data.reshape((n_samples, -1))
+    return data
 
-def split_train_dev_test(X, y, test_size, dev_size):
+def split_data(x, y, test_size, random_state=1):
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=test_size, shuffle=True)
+    return X_train, X_test, y_train, y_test
 
-    # Split the data into train data and rest of the data
-    X_train, X_rest, y_train, y_rest = train_test_split(X, y, test_size=(test_size + dev_size), random_state=42)
-
-    # Calculate the dev_ratio
-    dev_ratio = dev_size / (test_size + dev_size)
-
-    # Split the rest of the data into dev data and test data
-    X_dev, X_test, y_dev, y_test = train_test_split(X_rest, y_rest, test_size=dev_ratio, random_state=42)
-
-    return X_train, y_train, X_dev, y_dev, X_test, y_test
-
-
-def model_training(X, y, parameters, model = "svm"):
-
-    if model == "svm":
+def train_model(x, y, model_params, model_type="svm"):
+    if model_type == "svm":
         clf = svm.SVC
-    clf_model = clf(**parameters)
+    if model_type == "tree":
+        clf = tree.DecisionTreeClassifier
+    model = clf(**model_params)
+    model.fit(x, y)
+    return model
 
-    # Learn the digits on the train subset
-    clf_model.fit(X, y)
-    return clf_model
-
+def train_test_dev_split(X, y, test_size, dev_size):
+    X_train_dev, X_test, Y_train_Dev, y_test = split_data(X, y, test_size=test_size, random_state=1)
+    print("train+dev = {} test = {}".format(len(Y_train_Dev), len(y_test)))
+    X_train, X_dev, y_train, y_dev = split_data(X_train_dev, Y_train_Dev, dev_size / (1 - test_size), random_state=1)
+    return X_train, X_test, X_dev, y_train, y_test, y_dev
 
 def predict_and_eval(model, X_test, y_test):
-    
     predicted = model.predict(X_test)
-    return metrics.accuracy_score(y_test,predicted)
-
-
-def param_combination(model='svm'):
-
-    gamma_ranges = [0.001, 0.01, 0.1, 1, 10, 100]
-    C_ranges = [0.1, 1, 2, 5, 10]
-
-    if model == 'svm':
-        list_of_all_param_combination = list(product(gamma_ranges, C_ranges))
-
-        return list_of_all_param_combination
-    
-
-def tune_hparams(X_train, Y_train, x_dev, y_dev, list_of_all_param_combination):
-
-    best_accuracy = -1
-    best_model = None
-    for i in list_of_all_param_combination:
-        current_model = model_training(X_train,Y_train,{'gamma':i[0], 'C':i[1]},model='svm')
-        current_accuracy = predict_and_eval(current_model,x_dev,y_dev)
-
-        if current_accuracy > best_accuracy:
-            best_accuracy = current_accuracy
-            best_model = current_model
-            best_hparams = {'gamma':i[0], 'C':i[1]}
-
-    return best_hparams, best_model, best_accuracy
-
-
-def test_dev_variations(X,y):
-    test_size = [0.1, 0.2, 0.3]
-    dev_size = [0.1, 0.2, 0.3]
-    test_dev_data_combinations = list(product(test_size, dev_size))
-
-    for i in test_dev_data_combinations:
-        X_train, y_train, X_dev, y_dev, X_test, y_test = split_train_dev_test(X,y,i[0],i[1])
-        list_of_all_param_combination=param_combination(model='svm')
-        best_hparams, best_model, best_accuracy = tune_hparams(X_train, y_train, X_dev, y_dev, list_of_all_param_combination)
-        train_acc = predict_and_eval(best_model,X_train,y_train)
-        dev_acc = predict_and_eval(best_model,X_dev,y_dev)
-        test_acc = predict_and_eval(best_model,X_test,y_test)
-        print(f"""test_size={i[0]}, dev_size={i[1]}, train_size={1-sum(i)}, train_acc={train_acc}, 
-              dev_acc={dev_acc}, test_acc={test_acc}, best_hparams={best_hparams}""")
-
-
+    return metrics.accuracy_score(y_test, predicted), metrics.f1_score(y_test, predicted, average="macro"), predicted
