@@ -27,7 +27,7 @@ def tune_hparams(X_train, y_train, X_dev, y_dev, h_params_combinations, model_ty
             best_hparams = h_params
             best_model_path = f"./models/{model_type}_" + "_".join([f"{k}:{v}" for k, v in h_params.items()]) + ".joblib"
             best_model = model
-    dump(best_model, best_model_path)
+        dump(best_model, best_model_path)
     return best_hparams, best_model_path, best_accuracy
 
 def read_digits():
