@@ -1,4 +1,8 @@
 from flask import Flask, request,jsonify
+from joblib import load
+
+MODEL_PATH = r"models/svm_best.joblib"
+model = load(MODEL_PATH)
 
 app = Flask(__name__)
 @app.route("/")
@@ -9,12 +13,11 @@ def helloworld():
 def predict():
     data = request.get_json()
 
-    if data.get("image1") == data.get("image2"):
-        result = True
-    else:
-        result = False
+    image = data.get("image")
 
-    return jsonify({"result": result})
+    predicted_digit = model.predict([image])[0]
+
+    return jsonify({"digit": predicted_digit})
 
 if __name__ == "__main__":
     app.run()
