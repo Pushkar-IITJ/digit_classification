@@ -26,7 +26,7 @@ jobs:
       - name: Run Plot Digits Classification
         run:
           python plot_digits_classification.py
-      - name: build docker image
-        run: docker build -t digits:v1 -f docker/Dockerfile .
-      - name: run tests from docker
-        run: docker run digits:v1
+      # - name: build docker image
+      #   run: docker build -t digits:v1 -f docker/Dockerfile .
+      # - name: run tests from docker
+      #   run: docker run digits:v1

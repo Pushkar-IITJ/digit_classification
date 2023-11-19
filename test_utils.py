@@ -1,5 +1,28 @@
 from utils import get_hyperparameter_combinations, train_test_dev_split, read_digits, tune_hparams, preprocess_data
 import os
+from sklearn import datasets
+from api.app import app
+
+def get_sample_images():
+    digits = datasets.load_digits()
+    X, y = digits.images, digits.target
+    sample_images = {digit: X[y == digit][0] for digit in range(10)}
+    return sample_images
+
+def test_digit_predictions():
+    test_client = app.test_client()
+    sample_images = get_sample_images()
+
+    digits_to_check = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    for digit in digits_to_check:
+        image_data = sample_images[digit].flatten().tolist()
+        response = test_client.post("/predict", json={"image": image_data})
+        assert response.status_code == 200
+        
+        predicted_digit = response.get_json()["digit"]
+        assert predicted_digit == digit
+
 
 def test_hyperparameter_combinations_count():
     gamma_list = [0.001, 0.01, 0.1, 1]
