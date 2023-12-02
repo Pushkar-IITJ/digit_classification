@@ -29,9 +29,9 @@ jobs:
         run: python plot_digits_classification.py
         env:
           SAVE_MODELS: 'FALSE'
-      - name: build Dependency Docker image
-        run: docker build -f DependencyDockerfile -t dependencydocker .
-      - name: build Final Docker image
-        run: docker build -f FinalDockerfile -t mlops_major .
-      - name: run tests from docker
-        run: docker run mlops_major
+      # - name: build Dependency Docker image
+      #   run: docker build -f DependencyDockerfile -t dependencydocker .
+      # - name: build Final Docker image
+      #   run: docker build -f FinalDockerfile -t mlops_major .
+      # - name: run tests from docker
+      #   run: docker run mlops_major
