@@ -2,6 +2,52 @@ from sklearn.model_selection import train_test_split
 from sklearn import svm, tree, datasets, metrics
 from joblib import dump, load
 
+
+# Q1 solution:
+from sklearn.preprocessing import Normalizer
+def preprocess_unit_normalization(X_train, X_test):
+    X_train = preprocess_data(X_train)
+    X_test = preprocess_data(X_test)
+    normalizer = Normalizer()
+    X_train_normalized = normalizer.fit_transform(X_train)
+    X_test_normalized = normalizer.transform(X_test)
+
+    return X_train_normalized, X_test_normalized
+
+# Q2 solution:
+import os
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import accuracy_score, classification_report
+
+def train_and_evaluate_lr(X_train_normalized, y_train, X_test_normalized, y_test, roll_no="M22AIE213"):
+    solvers = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']
+    models_dir = 'models'
+    save_models = os.environ.get('SAVE_MODELS', 'TRUE')
+
+    for solver in solvers:
+        model = LogisticRegression(solver=solver)
+        model.fit(X_train_normalized, y_train)
+
+        # Cross-validation for evaluation
+        scores = cross_val_score(model, X_train_normalized, y_train, cv=5)
+        mean_score = np.mean(scores)
+        std_score = np.std(scores)
+
+        # Mean and Standard Deviation
+        print(f"Solver: {solver}, CV Mean Accuracy: {mean_score:.2f}, CV Standard Deviation: {std_score:.2f}")
+
+        # Evaluating on test data
+        y_pred = model.predict(X_test_normalized)
+        test_accuracy = accuracy_score(y_test, y_pred)
+        print(f"Solver: {solver}, Test Accuracy: {test_accuracy:.2f}")
+        print(f"Classification Report for Solver {solver}:\n{classification_report(y_test, y_pred)}")
+
+        if save_models != 'FALSE':
+            model_filename = os.path.join(models_dir, f"{roll_no}_lr_{solver}.joblib")
+            dump(model, model_filename)
+
 def get_combinations(param_name, param_values, base_combinations):
     new_combinations = []
     for value in param_values:

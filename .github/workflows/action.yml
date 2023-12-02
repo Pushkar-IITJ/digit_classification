@@ -21,12 +21,17 @@ jobs:
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Install dep
         run:  pip3 install --no-cache-dir -r requirements.txt
-      - name: Run Pytest
-        run: pytest
+      - name: Run test_models.py
+        run: python -m unittest test_models.py
+        env:
+          SAVE_MODELS: 'FALSE'
       - name: Run Plot Digits Classification
-        run:
-          python plot_digits_classification.py
-      - name: build docker image
-        run: docker build -t digits:v1 -f docker/Dockerfile .
+        run: python plot_digits_classification.py
+        env:
+          SAVE_MODELS: 'FALSE'
+      - name: build Dependency Docker image
+        run: docker build -f DependencyDockerfile -t dependencydocker .
+      - name: build Final Docker image
+        run: docker build -f FinalDockerfile -t mlops_major .
       - name: run tests from docker
-        run: docker run digits:v1
+        run: docker run mlops_major

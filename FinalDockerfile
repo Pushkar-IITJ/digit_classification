@@ -1,0 +1,10 @@
+# FinalDockerfile
+FROM dependencydocker:latest
+
+WORKDIR /digit_classification
+
+ENV SAVE_MODELS=FALSE
+
+COPY . .
+
+CMD ["./docker_run.sh"]
